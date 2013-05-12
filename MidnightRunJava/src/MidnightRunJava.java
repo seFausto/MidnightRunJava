@@ -36,8 +36,52 @@ public class MidnightRunJava extends JFrame {
 				drawOracleRectangle(g, pairs);
 			} else if (pairs.getValue().equals("Polygon")) {
 				drawOraclePolygon(g, pairs);
-			} else if (pairs.getValue().equals("Curve")) {
+			} else if (pairs.getValue().equals("Bird")) {
+
+				List<BigDecimal> xPoints = new ArrayList<BigDecimal>();
+				List<BigDecimal> yPoints = new ArrayList<BigDecimal>();
+
+				// get points in oracle
+				for (int i = 0; i < pairs.getKey().length; i++) {
+					xPoints.add((BigDecimal) pairs.getKey()[i]);
+					yPoints.add((BigDecimal) pairs.getKey()[++i]);
+
+				}
+
+				// loop through oracle points
+				for (int i = 0; i < xPoints.size(); i++) {
+					BigDecimal x = xPoints.get(i);
+					BigDecimal y = yPoints.get(i);
+
+					i++;
+					BigDecimal highestY;
+					Boolean skipNextItem = false;
+					// check if the next point is the end point
+					if (y.equals(yPoints.get(i))) {
+						// get the the Y for the next point
+						highestY = yPoints.get(i + 1);
+						skipNextItem = true;
+					} else {
+						highestY = yPoints.get(i);
+						i++;
+					}
+
+					// calculate the width and height
+					int width = (xPoints.get(i).intValue() - x.intValue())
+							* multiplier;
+					int height = (highestY.intValue() - y.intValue())
+							* multiplier;
+					// convert to java values
+
+					g.drawArc(convertOracleXToJavaX(x),
+							convertOracleYToJavaY(y), width, height, 0, 180);
+
+					if (skipNextItem)
+						i++;
+				}
+
 			}
+
 		}
 
 	}
@@ -111,7 +155,7 @@ public class MidnightRunJava extends JFrame {
 		Statement stmt = null;
 		Connection con = null;
 
-		String query = "SELECT m.Shape.sdo_elem_info as info, m.Shape.sdo_ordinates as ordinates from MVDEMO.MidnightRun m where id=10 or id =1 or id =2 or id=11 or id=12";
+		String query = "SELECT m.Shape.sdo_elem_info as info, m.Shape.sdo_ordinates as ordinates from MVDEMO.MidnightRun m where id=10 or id =1 or id =2 or id=11 or id=12 or id = 4 or id = 5";
 		try {
 
 			DriverManager.registerDriver(new oracle.jdbc.driver.OracleDriver());
@@ -135,7 +179,7 @@ public class MidnightRunJava extends JFrame {
 						.equals(java.math.BigDecimal.valueOf(2))) {
 					if (((java.math.BigDecimal) elemInfo[2])
 							.equals(java.math.BigDecimal.valueOf(2))) {
-						type = "Curve";
+						type = "Bird";
 					} else {
 						type = "Line";
 					}
