@@ -41,7 +41,40 @@ public class MidnightRunJava extends JFrame {
 			} else if (pairs.getValue().equals("Moon")) {
 				drawOracleMoon(g, pairs);
 			} else if (pairs.getValue().equals("Circle")) {
+				// Get points
+				List<BigDecimal> xPoints = new ArrayList<BigDecimal>();
+				List<BigDecimal> yPoints = new ArrayList<BigDecimal>();
+
+				for (int i = 0; i < pairs.getKey().length; i++) {
+					xPoints.add((BigDecimal) pairs.getKey()[i]);
+					yPoints.add((BigDecimal) pairs.getKey()[++i]);
+				}
 				
+				// get points in oracle
+				BigDecimal leftmostX = BigDecimal.valueOf(1000);
+				BigDecimal topmostY = BigDecimal.ZERO;
+				BigDecimal bottomY = BigDecimal.valueOf(1000);
+				
+				for (int i = 0; i < xPoints.size(); i++) {
+					if (xPoints.get(i).intValue() < leftmostX.intValue()) {
+						leftmostX = xPoints.get(i);
+					}
+					
+					if (xPoints.get(i).intValue() > topmostY.intValue()) {
+						topmostY = yPoints.get(i);
+					}
+					
+					if (xPoints.get(i).intValue() < bottomY.intValue()) {
+						bottomY = yPoints.get(i);
+					}
+					
+				}
+
+				int width = (topmostY.intValue() - bottomY.intValue())
+						* multiplier;
+
+				g.drawOval(convertOracleXToJavaX(leftmostX),
+						convertOracleYToJavaY(topmostY), width, width);
 			}
 
 		}
@@ -250,7 +283,8 @@ public class MidnightRunJava extends JFrame {
 		Statement stmt = null;
 		Connection con = null;
 
-		String query = "SELECT m.name, m.Shape.sdo_elem_info as info, m.Shape.sdo_ordinates as ordinates from MVDEMO.MidnightRun m where id=10 or id =1 or id =2 or id=11 or id=12 or id = 4 or id = 5 or id = 3";
+		String query = "SELECT m.name, m.Shape.sdo_elem_info as info, m.Shape.sdo_ordinates as ordinates from MVDEMO.MidnightRun m";
+		//query += " where id=10 or id =1 or id =2 or id=11 or id=12 or id = 4 or id = 5 or id = 3 or id = 7";
 		try {
 
 			DriverManager.registerDriver(new oracle.jdbc.driver.OracleDriver());
@@ -281,17 +315,20 @@ public class MidnightRunJava extends JFrame {
 					}
 				} else if (((java.math.BigDecimal) elemInfo[1])
 						.equals(java.math.BigDecimal.valueOf(1003))) {
-					type = "Rectangle";
+					if (((java.math.BigDecimal) elemInfo[2])
+							.equals(java.math.BigDecimal.valueOf(4))) {
+						type = "Circle";
+					} else {
+						type = "Rectangle";
+					}
 				} else if (((java.math.BigDecimal) elemInfo[1])
 						.equals(java.math.BigDecimal.valueOf(1005))) {
+
 					if (name.equals("Moon")) {
 						type = "Moon";
 					} else {
 						type = "Polygon";
 					}
-				}else if (((java.math.BigDecimal) elemInfo[2])
-						.equals(java.math.BigDecimal.valueOf(4))) {
-					type ="Circle";
 				}
 				result.put((Object[]) ordinateArray.getArray(), type);
 			}
