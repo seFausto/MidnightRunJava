@@ -8,6 +8,7 @@ import java.sql.*;
 
 public class MidnightRunJava extends JFrame {
 
+	private static final long serialVersionUID = 1L;
 	public static int originY = 500;
 	public static int multiplier = 5;
 
@@ -39,6 +40,14 @@ public class MidnightRunJava extends JFrame {
 		// paint nearest neighbors in red
 		shapes = getNearestNeighbor();
 		g.setColor(Color.red);
+		it = shapes.entrySet().iterator();
+		while (it.hasNext()) {
+			paintAllOracleObjects(g, it);
+		}
+
+		// paint intersecting polygons green
+		shapes = getIntersectionBetweenBoxAndCabin();
+		g.setColor(Color.green);
 		it = shapes.entrySet().iterator();
 		while (it.hasNext()) {
 			paintAllOracleObjects(g, it);
@@ -295,14 +304,6 @@ public class MidnightRunJava extends JFrame {
 		}
 	}
 
-	public static void main(String[] args) throws ClassNotFoundException,
-			SQLException {
-
-		MidnightRunJava mrj = new MidnightRunJava();
-		mrj.setVisible(true);
-
-	}
-
 	private static HashMap<Object[], String> getShapes() {
 		HashMap<Object[], String> result = new HashMap<Object[], String>();
 
@@ -347,7 +348,8 @@ public class MidnightRunJava extends JFrame {
 		Statement stmt = null;
 		Connection con = null;
 
-		String query = "SELECT  m.name, m.Shape.sdo_elem_info as info, m.Shape.sdo_ordinates as ordinates FROM cola_markets m WHERE SDO_NN(m.shape, sdo_geometry(2001, NULL, sdo_point_type(40,2,NULL), NULL,   NULL),  'sdo_num_res=4') = 'TRUE'";
+		String query = "SELECT  m.name, m.Shape.sdo_elem_info as info, m.Shape.sdo_ordinates as ordinates FROM cola_markets m ";
+		query += " WHERE SDO_NN(m.shape, sdo_geometry(2001, NULL, sdo_point_type(40,2,NULL), NULL,   NULL),  'sdo_num_res=2') = 'TRUE'";
 
 		try {
 
@@ -377,6 +379,46 @@ public class MidnightRunJava extends JFrame {
 
 		return result;
 
+	}
+
+	private static HashMap<Object[], String> getIntersectionBetweenBoxAndCabin() {
+		HashMap<Object[], String> result = new HashMap<Object[], String>();
+
+		Statement stmt = null;
+		Connection con = null;
+
+		String query = "select  'Polygon' as name, m.Shape.sdo_elem_info as info, m.Shape.sdo_ordinates as ordinates ";
+		query += "from (SELECT SDO_GEOM.SDO_INTERSECTION(c_a.shape, c_c.shape, 0.005) as Shape ";
+		query += "FROM cola_markets c_a, cola_markets c_c ";
+		query += "   WHERE c_a.name = 'Box' AND c_c.name = 'Cabin') m";
+
+		try {
+
+			DriverManager.registerDriver(new oracle.jdbc.driver.OracleDriver());
+
+			con = DriverManager
+					.getConnection("jdbc:oracle:thin:mvdemo/mvdemo@localhost:1521:orcl");
+
+			stmt = con.createStatement();
+
+			ResultSet rs = stmt.executeQuery(query);
+
+			while (rs.next()) {
+
+				Array infoArray = rs.getArray("info");
+				Object[] elemInfo = (Object[]) infoArray.getArray();
+
+				Array ordinateArray = rs.getArray("ordinates");
+				String name = rs.getString("name");
+
+				getOracleObjectType(result, elemInfo, ordinateArray, name);
+			}
+
+		} catch (SQLException e) {
+
+		}
+
+		return result;
 	}
 
 	private static void getOracleObjectType(HashMap<Object[], String> result,
@@ -443,4 +485,12 @@ public class MidnightRunJava extends JFrame {
 		return oracleY * multiplier;
 
 	}
+
+	public static void main(String[] args) throws ClassNotFoundException,
+			SQLException {
+
+		MidnightRunJava mrj = new MidnightRunJava();
+		mrj.setVisible(true);
+	}
+
 }
