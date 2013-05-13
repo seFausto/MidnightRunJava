@@ -21,6 +21,8 @@ public class MidnightRunJava extends JFrame {
 
 	static MidnightRunJava mrj;
 
+	static String queryAllShapes = "SELECT m.name, m.Shape.sdo_elem_info as info, m.Shape.sdo_ordinates as ordinates from MVDEMO.cola_markets m";
+
 	public MidnightRunJava() {
 		final JPanel panel = new JPanel();
 		getContentPane().add(panel);
@@ -70,11 +72,25 @@ public class MidnightRunJava extends JFrame {
 			}
 		});
 
+		JButton btnShowMoon = new JButton("ShowMoon");
+		btnShowMoon.addActionListener(new java.awt.event.ActionListener() {
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
+				if (queryAllShapes.contains("where mkt_id <> 3"))
+					queryAllShapes = queryAllShapes.replace(
+							"where mkt_id <> 3", "");
+				else
+					queryAllShapes += " where mkt_id <> 3";
+				mrj.repaint();
+			}
+		});
+
 		panel.add(btnShowMBR);
 		panel.add(btnShowLenghtOfMountains);
 		panel.add(btnShowAllShapes);
 		panel.add(btnShowIntersection);
 		panel.add(btnShowNN);
+		panel.add(btnShowMoon);
+
 	}
 
 	public void paint(Graphics g) {
@@ -386,8 +402,6 @@ public class MidnightRunJava extends JFrame {
 		Statement stmt = null;
 		Connection con = null;
 
-		String query = "SELECT m.name, m.Shape.sdo_elem_info as info, m.Shape.sdo_ordinates as ordinates from MVDEMO.cola_markets m";
-
 		try {
 
 			DriverManager.registerDriver(new oracle.jdbc.driver.OracleDriver());
@@ -397,7 +411,7 @@ public class MidnightRunJava extends JFrame {
 
 			stmt = con.createStatement();
 
-			ResultSet rs = stmt.executeQuery(query);
+			ResultSet rs = stmt.executeQuery(queryAllShapes);
 
 			while (rs.next()) {
 
@@ -644,6 +658,7 @@ public class MidnightRunJava extends JFrame {
 			SQLException {
 
 		mrj = new MidnightRunJava();
+		mrj.setSize(600, 600);
 		mrj.setVisible(true);
 	}
 
