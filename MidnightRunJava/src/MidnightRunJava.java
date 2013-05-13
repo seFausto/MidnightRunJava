@@ -29,6 +29,11 @@ public class MidnightRunJava extends JFrame {
 
 	public void paint(Graphics g) {
 		super.paint(g);
+		Font font = new Font("Arial", Font.PLAIN, 32);
+
+		g.setFont(font);
+
+		g.drawString("Midnight Run", 150, 200);
 
 		HashMap<Object[], String> shapes = getShapes();
 
