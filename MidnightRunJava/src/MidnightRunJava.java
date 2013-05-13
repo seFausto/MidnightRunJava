@@ -29,10 +29,12 @@ public class MidnightRunJava extends JFrame {
 
 	public void paint(Graphics g) {
 		super.paint(g);
+
+		g.drawString("Lenght of Mountains: " + getLengthOfShape().toString(),
+				500, 200);
+
 		Font font = new Font("Arial", Font.PLAIN, 32);
-
 		g.setFont(font);
-
 		g.drawString("Midnight Run", 150, 200);
 
 		HashMap<Object[], String> shapes = getShapes();
@@ -317,9 +319,8 @@ public class MidnightRunJava extends JFrame {
 		}
 	}
 
-	
-	//Operations on Oracle Objects
-	//Get all shapes
+	// Operations on Oracle Objects
+	// Get all shapes
 	private static HashMap<Object[], String> getShapes() {
 		HashMap<Object[], String> result = new HashMap<Object[], String>();
 
@@ -358,7 +359,7 @@ public class MidnightRunJava extends JFrame {
 
 	}
 
-	//Get nearest Neighbor
+	// Get nearest Neighbor
 	private static HashMap<Object[], String> getNearestNeighbor() {
 		HashMap<Object[], String> result = new HashMap<Object[], String>();
 
@@ -398,7 +399,7 @@ public class MidnightRunJava extends JFrame {
 
 	}
 
-	//Get Intersection between 2 objects
+	// Get Intersection between 2 objects
 	private static HashMap<Object[], String> getIntersectionBetweenBoxAndCabin() {
 		HashMap<Object[], String> result = new HashMap<Object[], String>();
 
@@ -439,7 +440,7 @@ public class MidnightRunJava extends JFrame {
 		return result;
 	}
 
-	//Get MBR of an object
+	// Get MBR of an object
 	private static HashMap<Object[], String> getMBRForShape() {
 
 		HashMap<Object[], String> result = new HashMap<Object[], String>();
@@ -448,7 +449,7 @@ public class MidnightRunJava extends JFrame {
 		Connection con = null;
 
 		String query = " select  'Rectangle' as name, m.Shape.sdo_elem_info as info, m.Shape.sdo_ordinates as ordinates ";
-		query+= "from (SELECT SDO_AGGR_MBR(shape) as Shape FROM mvdemo.cola_markets where mkt_id = 6) m";
+		query += "from (SELECT SDO_AGGR_MBR(shape) as Shape FROM mvdemo.cola_markets where mkt_id = 6) m";
 
 		try {
 
@@ -479,8 +480,42 @@ public class MidnightRunJava extends JFrame {
 		return result;
 	}
 
-	
-	
+	// Get Length of Object
+	private static BigDecimal getLengthOfShape() {
+		BigDecimal result = BigDecimal.ZERO;
+
+		Statement stmt = null;
+		Connection con = null;
+
+		String query = "SELECT SDO_GEOM.SDO_LENGTH(c.shape, m.diminfo) as length ";
+		query += "FROM cola_markets c, user_sdo_geom_metadata m ";
+		query += "WHERE m.table_name = 'COLA_MARKETS' AND m.column_name = 'SHAPE' ";
+		query += "AND c.name = 'Mountains'";
+
+		try {
+
+			DriverManager.registerDriver(new oracle.jdbc.driver.OracleDriver());
+
+			con = DriverManager
+					.getConnection("jdbc:oracle:thin:mvdemo/mvdemo@localhost:1521:orcl");
+
+			stmt = con.createStatement();
+
+			ResultSet rs = stmt.executeQuery(query);
+
+			while (rs.next()) {
+				result = rs.getBigDecimal("length");
+			}
+
+		} catch (SQLException e) {
+
+			System.out.println("Error: " + e.getMessage());
+		}
+
+		return result;
+
+	}
+
 	private static void getOracleObjectType(HashMap<Object[], String> result,
 			Object[] elemInfo, Array ordinateArray, String name)
 			throws SQLException {
