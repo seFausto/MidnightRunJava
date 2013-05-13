@@ -58,6 +58,14 @@ public class MidnightRunJava extends JFrame {
 			paintAllOracleObjects(g, it);
 		}
 
+		// paint MBR of Shape
+		shapes = getMBRForShape();
+		g.setColor(Color.blue);
+		it = shapes.entrySet().iterator();
+		while (it.hasNext()) {
+			paintAllOracleObjects(g, it);
+		}
+
 	}
 
 	private void paintAllOracleObjects(Graphics g,
@@ -309,6 +317,9 @@ public class MidnightRunJava extends JFrame {
 		}
 	}
 
+	
+	//Operations on Oracle Objects
+	//Get all shapes
 	private static HashMap<Object[], String> getShapes() {
 		HashMap<Object[], String> result = new HashMap<Object[], String>();
 
@@ -347,6 +358,7 @@ public class MidnightRunJava extends JFrame {
 
 	}
 
+	//Get nearest Neighbor
 	private static HashMap<Object[], String> getNearestNeighbor() {
 		HashMap<Object[], String> result = new HashMap<Object[], String>();
 
@@ -386,6 +398,7 @@ public class MidnightRunJava extends JFrame {
 
 	}
 
+	//Get Intersection between 2 objects
 	private static HashMap<Object[], String> getIntersectionBetweenBoxAndCabin() {
 		HashMap<Object[], String> result = new HashMap<Object[], String>();
 
@@ -426,6 +439,48 @@ public class MidnightRunJava extends JFrame {
 		return result;
 	}
 
+	//Get MBR of an object
+	private static HashMap<Object[], String> getMBRForShape() {
+
+		HashMap<Object[], String> result = new HashMap<Object[], String>();
+
+		Statement stmt = null;
+		Connection con = null;
+
+		String query = " select  'Rectangle' as name, m.Shape.sdo_elem_info as info, m.Shape.sdo_ordinates as ordinates ";
+		query+= "from (SELECT SDO_AGGR_MBR(shape) as Shape FROM mvdemo.cola_markets where mkt_id = 6) m";
+
+		try {
+
+			DriverManager.registerDriver(new oracle.jdbc.driver.OracleDriver());
+
+			con = DriverManager
+					.getConnection("jdbc:oracle:thin:mvdemo/mvdemo@localhost:1521:orcl");
+
+			stmt = con.createStatement();
+
+			ResultSet rs = stmt.executeQuery(query);
+
+			while (rs.next()) {
+
+				Array infoArray = rs.getArray("info");
+				Object[] elemInfo = (Object[]) infoArray.getArray();
+
+				Array ordinateArray = rs.getArray("ordinates");
+				String name = rs.getString("name");
+
+				getOracleObjectType(result, elemInfo, ordinateArray, name);
+			}
+
+		} catch (SQLException e) {
+
+		}
+
+		return result;
+	}
+
+	
+	
 	private static void getOracleObjectType(HashMap<Object[], String> result,
 			Object[] elemInfo, Array ordinateArray, String name)
 			throws SQLException {
