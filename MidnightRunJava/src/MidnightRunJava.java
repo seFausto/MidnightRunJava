@@ -12,76 +12,101 @@ public class MidnightRunJava extends JFrame {
 	public static int multiplier = 5;
 
 	public MidnightRunJava() {
-		JPanel panel = new JPanel();
+		final JPanel panel = new JPanel();
 		getContentPane().add(panel);
 		setSize(800, 600);
 
-		JButton button = new JButton("press");
+		JButton button = new JButton("Color Red");
+
+		button.addActionListener(new java.awt.event.ActionListener() {
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
+			}
+		});
+
 		panel.add(button);
 	}
 
 	public void paint(Graphics g) {
 		super.paint(g);
 
-		HashMap<Object[], String> shapes = GetShapes();
+		HashMap<Object[], String> shapes = getShapes();
 
 		Iterator<Entry<Object[], String>> it = shapes.entrySet().iterator();
 		while (it.hasNext()) {
-			Map.Entry<Object[], String> pairs = (Map.Entry<Object[], String>) it
-					.next();
+			paintAllOracleObjects(g, it);
+		}
 
-			if (pairs.getValue().equals("Line")) {
-				drawOracleMultiline(g, pairs);
-			} else if (pairs.getValue().equals("Rectangle")) {
-				drawOracleRectangle(g, pairs);
-			} else if (pairs.getValue().equals("Polygon")) {
-				drawOraclePolygon(g, pairs);
-			} else if (pairs.getValue().equals("Bird")) {
-				drawOracleBrids(g, pairs);
-			} else if (pairs.getValue().equals("Moon")) {
-				drawOracleMoon(g, pairs);
-			} else if (pairs.getValue().equals("Circle")) {
-				// Get points
-				List<BigDecimal> xPoints = new ArrayList<BigDecimal>();
-				List<BigDecimal> yPoints = new ArrayList<BigDecimal>();
+		// paint nearest neighbors in red
+		shapes = getNearestNeighbor();
+		g.setColor(Color.red);
+		it = shapes.entrySet().iterator();
+		while (it.hasNext()) {
+			paintAllOracleObjects(g, it);
+		}
+		
+		
+	}
 
-				for (int i = 0; i < pairs.getKey().length; i++) {
-					xPoints.add((BigDecimal) pairs.getKey()[i]);
-					yPoints.add((BigDecimal) pairs.getKey()[++i]);
-				}
-				
-				// get points in oracle
-				BigDecimal leftmostX = BigDecimal.valueOf(1000);
-				BigDecimal topmostY = BigDecimal.ZERO;
-				BigDecimal bottomY = BigDecimal.valueOf(1000);
-				
-				for (int i = 0; i < xPoints.size(); i++) {
-					if (xPoints.get(i).intValue() < leftmostX.intValue()) {
-						leftmostX = xPoints.get(i);
-					}
-					
-					if (xPoints.get(i).intValue() > topmostY.intValue()) {
-						topmostY = yPoints.get(i);
-					}
-					
-					if (xPoints.get(i).intValue() < bottomY.intValue()) {
-						bottomY = yPoints.get(i);
-					}
-					
-				}
+	private void paintAllOracleObjects(Graphics g,
+			Iterator<Entry<Object[], String>> it) {
+		Map.Entry<Object[], String> pairs = (Map.Entry<Object[], String>) it
+				.next();
 
-				int width = (topmostY.intValue() - bottomY.intValue())
-						* multiplier;
+		if (pairs.getValue().equals("Line")) {
+			drawOracleMultiline(g, pairs);
+		} else if (pairs.getValue().equals("Rectangle")) {
+			drawOracleRectangle(g, pairs);
+		} else if (pairs.getValue().equals("Polygon")) {
+			drawOraclePolygon(g, pairs);
+		} else if (pairs.getValue().equals("Bird")) {
+			drawOracleBrids(g, pairs);
+		} else if (pairs.getValue().equals("Moon")) {
+			drawOracleMoon(g, pairs);
+		} else if (pairs.getValue().equals("Circle")) {
+			drawOracleCircle(g, pairs);
+		} else if (pairs.getValue().equals("LetterC")) {
+			drawOraclePolygon(g, pairs);
+		}
+	}
 
-				g.drawOval(convertOracleXToJavaX(leftmostX),
-						convertOracleYToJavaY(topmostY), width, width);
+	private void drawOracleCircle(Graphics g, Map.Entry<Object[], String> pairs) {
+		// Get points
+		List<BigDecimal> xPoints = new ArrayList<BigDecimal>();
+		List<BigDecimal> yPoints = new ArrayList<BigDecimal>();
+
+		for (int i = 0; i < pairs.getKey().length; i++) {
+			xPoints.add((BigDecimal) pairs.getKey()[i]);
+			yPoints.add((BigDecimal) pairs.getKey()[++i]);
+		}
+
+		// get points in oracle
+		BigDecimal leftmostX = BigDecimal.valueOf(1000);
+		BigDecimal topmostY = BigDecimal.ZERO;
+		BigDecimal bottomY = BigDecimal.valueOf(1000);
+
+		for (int i = 0; i < xPoints.size(); i++) {
+			if (xPoints.get(i).intValue() < leftmostX.intValue()) {
+				leftmostX = xPoints.get(i);
+			}
+
+			if (xPoints.get(i).intValue() > topmostY.intValue()) {
+				topmostY = yPoints.get(i);
+			}
+
+			if (xPoints.get(i).intValue() < bottomY.intValue()) {
+				bottomY = yPoints.get(i);
 			}
 
 		}
 
+		int width = (topmostY.intValue() - bottomY.intValue()) * multiplier;
+
+		g.drawOval(convertOracleXToJavaX(leftmostX),
+				convertOracleYToJavaY(topmostY), width, width);
 	}
 
 	private void drawOracleMoon(Graphics g, Map.Entry<Object[], String> pairs) {
+		//TODO: Fix how moon displays
 		List<BigDecimal> xPoints = new ArrayList<BigDecimal>();
 		List<BigDecimal> yPoints = new ArrayList<BigDecimal>();
 
@@ -215,6 +240,8 @@ public class MidnightRunJava extends JFrame {
 	}
 
 	private void drawOraclePolygon(Graphics g, Map.Entry<Object[], String> pairs) {
+		//TODO: Fix how polygon displays
+		
 		List<Integer> xPoints = new ArrayList<Integer>();
 		List<Integer> yPoints = new ArrayList<Integer>();
 
@@ -277,14 +304,14 @@ public class MidnightRunJava extends JFrame {
 
 	}
 
-	private static HashMap<Object[], String> GetShapes() {
+	private static HashMap<Object[], String> getShapes() {
 		HashMap<Object[], String> result = new HashMap<Object[], String>();
 
 		Statement stmt = null;
 		Connection con = null;
 
-		String query = "SELECT m.name, m.Shape.sdo_elem_info as info, m.Shape.sdo_ordinates as ordinates from MVDEMO.MidnightRun m";
-		//query += " where id=10 or id =1 or id =2 or id=11 or id=12 or id = 4 or id = 5 or id = 3 or id = 7";
+		String query = "SELECT m.name, m.Shape.sdo_elem_info as info, m.Shape.sdo_ordinates as ordinates from MVDEMO.cola_markets m";
+
 		try {
 
 			DriverManager.registerDriver(new oracle.jdbc.driver.OracleDriver());
@@ -305,32 +332,7 @@ public class MidnightRunJava extends JFrame {
 				String name = rs.getString("name");
 
 				String type = "";
-				if (((java.math.BigDecimal) elemInfo[1])
-						.equals(java.math.BigDecimal.valueOf(2))) {
-					if (((java.math.BigDecimal) elemInfo[2])
-							.equals(java.math.BigDecimal.valueOf(2))) {
-						type = "Bird";
-					} else {
-						type = "Line";
-					}
-				} else if (((java.math.BigDecimal) elemInfo[1])
-						.equals(java.math.BigDecimal.valueOf(1003))) {
-					if (((java.math.BigDecimal) elemInfo[2])
-							.equals(java.math.BigDecimal.valueOf(4))) {
-						type = "Circle";
-					} else {
-						type = "Rectangle";
-					}
-				} else if (((java.math.BigDecimal) elemInfo[1])
-						.equals(java.math.BigDecimal.valueOf(1005))) {
-
-					if (name.equals("Moon")) {
-						type = "Moon";
-					} else {
-						type = "Polygon";
-					}
-				}
-				result.put((Object[]) ordinateArray.getArray(), type);
+				getOracleObjectType(result, elemInfo, ordinateArray, name, type);
 			}
 
 		} catch (SQLException e) {
@@ -339,6 +341,80 @@ public class MidnightRunJava extends JFrame {
 
 		return result;
 
+	}
+
+	private static HashMap<Object[], String> getNearestNeighbor() {
+		HashMap<Object[], String> result = new HashMap<Object[], String>();
+
+		Statement stmt = null;
+		Connection con = null;
+
+		String query = "SELECT  m.name, m.Shape.sdo_elem_info as info, m.Shape.sdo_ordinates as ordinates FROM cola_markets m WHERE SDO_NN(m.shape, sdo_geometry(2001, NULL, sdo_point_type(40,2,NULL), NULL,   NULL),  'sdo_num_res=4') = 'TRUE'";
+
+		try {
+
+			DriverManager.registerDriver(new oracle.jdbc.driver.OracleDriver());
+
+			con = DriverManager
+					.getConnection("jdbc:oracle:thin:mvdemo/mvdemo@localhost:1521:orcl");
+
+			stmt = con.createStatement();
+
+			ResultSet rs = stmt.executeQuery(query);
+
+			while (rs.next()) {
+
+				Array infoArray = rs.getArray("info");
+				Object[] elemInfo = (Object[]) infoArray.getArray();
+
+				Array ordinateArray = rs.getArray("ordinates");
+				String name = rs.getString("name");
+
+				String type = "";
+				getOracleObjectType(result, elemInfo, ordinateArray, name, type);
+			}
+
+		} catch (SQLException e) {
+
+		}
+
+		return result;
+
+	}
+
+	private static void getOracleObjectType(HashMap<Object[], String> result,
+			Object[] elemInfo, Array ordinateArray, String name, String type)
+			throws SQLException {
+		if (((java.math.BigDecimal) elemInfo[1])
+				.equals(java.math.BigDecimal.valueOf(2))) {
+			if (((java.math.BigDecimal) elemInfo[2])
+					.equals(java.math.BigDecimal.valueOf(2))) {
+				if (name.equals("Letter C")) {
+					type = "LetterC";
+				} else {
+					type = "Bird";
+				}
+			} else {
+				type = "Line";
+			}
+		} else if (((java.math.BigDecimal) elemInfo[1])
+				.equals(java.math.BigDecimal.valueOf(1003))) {
+			if (((java.math.BigDecimal) elemInfo[2])
+					.equals(java.math.BigDecimal.valueOf(4))) {
+				type = "Circle";
+			} else {
+				type = "Rectangle";
+			}
+		} else if (((java.math.BigDecimal) elemInfo[1])
+				.equals(java.math.BigDecimal.valueOf(1005))) {
+
+			if (name.equals("Moon")) {
+				type = "Moon";
+			} else {
+				type = "Polygon";
+			}
+		}
+		result.put((Object[]) ordinateArray.getArray(), type);
 	}
 
 	private static int convertOracleYToJavaY(BigDecimal oracleY) {
