@@ -43,8 +43,7 @@ public class MidnightRunJava extends JFrame {
 		while (it.hasNext()) {
 			paintAllOracleObjects(g, it);
 		}
-		
-		
+
 	}
 
 	private void paintAllOracleObjects(Graphics g,
@@ -106,7 +105,7 @@ public class MidnightRunJava extends JFrame {
 	}
 
 	private void drawOracleMoon(Graphics g, Map.Entry<Object[], String> pairs) {
-		//TODO: Fix how moon displays
+		// TODO: Fix how moon displays
 		List<BigDecimal> xPoints = new ArrayList<BigDecimal>();
 		List<BigDecimal> yPoints = new ArrayList<BigDecimal>();
 
@@ -240,8 +239,8 @@ public class MidnightRunJava extends JFrame {
 	}
 
 	private void drawOraclePolygon(Graphics g, Map.Entry<Object[], String> pairs) {
-		//TODO: Fix how polygon displays
-		
+		// TODO: Fix how polygon displays
+
 		List<Integer> xPoints = new ArrayList<Integer>();
 		List<Integer> yPoints = new ArrayList<Integer>();
 
@@ -331,8 +330,7 @@ public class MidnightRunJava extends JFrame {
 				Array ordinateArray = rs.getArray("ordinates");
 				String name = rs.getString("name");
 
-				String type = "";
-				getOracleObjectType(result, elemInfo, ordinateArray, name, type);
+				getOracleObjectType(result, elemInfo, ordinateArray, name);
 			}
 
 		} catch (SQLException e) {
@@ -370,8 +368,7 @@ public class MidnightRunJava extends JFrame {
 				Array ordinateArray = rs.getArray("ordinates");
 				String name = rs.getString("name");
 
-				String type = "";
-				getOracleObjectType(result, elemInfo, ordinateArray, name, type);
+				getOracleObjectType(result, elemInfo, ordinateArray, name);
 			}
 
 		} catch (SQLException e) {
@@ -383,10 +380,11 @@ public class MidnightRunJava extends JFrame {
 	}
 
 	private static void getOracleObjectType(HashMap<Object[], String> result,
-			Object[] elemInfo, Array ordinateArray, String name, String type)
+			Object[] elemInfo, Array ordinateArray, String name)
 			throws SQLException {
-		if (((java.math.BigDecimal) elemInfo[1])
-				.equals(java.math.BigDecimal.valueOf(2))) {
+		String type = "";
+		if (((java.math.BigDecimal) elemInfo[1]).equals(java.math.BigDecimal
+				.valueOf(2))) {
 			if (((java.math.BigDecimal) elemInfo[2])
 					.equals(java.math.BigDecimal.valueOf(2))) {
 				if (name.equals("Letter C")) {
@@ -402,16 +400,15 @@ public class MidnightRunJava extends JFrame {
 			if (((java.math.BigDecimal) elemInfo[2])
 					.equals(java.math.BigDecimal.valueOf(4))) {
 				type = "Circle";
-			} else {
+			} else if (((java.math.BigDecimal) elemInfo[2])
+					.equals(java.math.BigDecimal.valueOf(3))) {
 				type = "Rectangle";
-			}
-		} else if (((java.math.BigDecimal) elemInfo[1])
-				.equals(java.math.BigDecimal.valueOf(1005))) {
-
-			if (name.equals("Moon")) {
-				type = "Moon";
-			} else {
+			} else if (((java.math.BigDecimal) elemInfo[2])
+					.equals(java.math.BigDecimal.valueOf(1))) {
 				type = "Polygon";
+			} else if (((java.math.BigDecimal) elemInfo[2])
+					.equals(java.math.BigDecimal.valueOf(2))) {
+				type = "Moon";
 			}
 		}
 		result.put((Object[]) ordinateArray.getArray(), type);
