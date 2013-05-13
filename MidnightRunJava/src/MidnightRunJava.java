@@ -1,6 +1,7 @@
 import java.awt.*;
 import java.util.List;
 import javax.swing.*;
+
 import java.util.*;
 import java.util.Map.Entry;
 import java.math.BigDecimal;
@@ -12,62 +13,120 @@ public class MidnightRunJava extends JFrame {
 	public static int originY = 500;
 	public static int multiplier = 5;
 
+	public static Boolean showMBR = false;
+	public static Boolean showLenghtOfMountains = false;
+	public static Boolean showAllShapes = true;
+	public static Boolean showIntersection = false;
+	public static Boolean showNN = false;
+
+	static MidnightRunJava mrj;
+
 	public MidnightRunJava() {
 		final JPanel panel = new JPanel();
 		getContentPane().add(panel);
 		setSize(800, 600);
 
-		JButton button = new JButton("Color Red");
+		JButton btnShowMBR = new JButton("MBR For Tire");
 
-		button.addActionListener(new java.awt.event.ActionListener() {
+		btnShowMBR.addActionListener(new java.awt.event.ActionListener() {
 			public void actionPerformed(java.awt.event.ActionEvent evt) {
+				showMBR = !showMBR;
+				mrj.repaint();
 			}
 		});
 
-		panel.add(button);
+		JButton btnShowLenghtOfMountains = new JButton("Show Mountain Lenght");
+
+		btnShowLenghtOfMountains
+				.addActionListener(new java.awt.event.ActionListener() {
+					public void actionPerformed(java.awt.event.ActionEvent evt) {
+						showLenghtOfMountains = !showLenghtOfMountains;
+						mrj.repaint();
+					}
+				});
+
+		JButton btnShowAllShapes = new JButton("Show All Shapes");
+		btnShowAllShapes.addActionListener(new java.awt.event.ActionListener() {
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
+				showAllShapes = !showAllShapes;
+				mrj.repaint();
+			}
+		});
+
+		JButton btnShowIntersection = new JButton("Show Intersection");
+		btnShowIntersection
+				.addActionListener(new java.awt.event.ActionListener() {
+					public void actionPerformed(java.awt.event.ActionEvent evt) {
+						showIntersection = !showIntersection;
+						mrj.repaint();
+					}
+				});
+
+		JButton btnShowNN = new JButton("ShowNN");
+		btnShowNN.addActionListener(new java.awt.event.ActionListener() {
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
+				showNN = !showNN;
+				mrj.repaint();
+			}
+		});
+
+		panel.add(btnShowMBR);
+		panel.add(btnShowLenghtOfMountains);
+		panel.add(btnShowAllShapes);
+		panel.add(btnShowIntersection);
+		panel.add(btnShowNN);
 	}
 
 	public void paint(Graphics g) {
 		super.paint(g);
 
-		g.drawString("Lenght of Mountains: " + getLengthOfShape().toString(),
-				500, 200);
+		if (showLenghtOfMountains) {
+			g.drawString("Lenght of Mountains: "
+					+ getLengthOfShape().toString(), 500, 200);
+		}
 
 		Font font = new Font("Arial", Font.PLAIN, 32);
 		g.setFont(font);
 		g.drawString("Midnight Run", 150, 200);
 
 		HashMap<Object[], String> shapes = getShapes();
+		Iterator<Entry<Object[], String>> it;
 
-		Iterator<Entry<Object[], String>> it = shapes.entrySet().iterator();
-		while (it.hasNext()) {
-			paintAllOracleObjects(g, it);
+		if (showAllShapes) {
+			it = shapes.entrySet().iterator();
+			while (it.hasNext()) {
+				paintAllOracleObjects(g, it);
+			}
 		}
-
 		// paint nearest neighbors in red
-		shapes = getNearestNeighbor();
-		g.setColor(Color.red);
-		it = shapes.entrySet().iterator();
-		while (it.hasNext()) {
-			paintAllOracleObjects(g, it);
+		if (showNN) {
+			shapes = getNearestNeighbor();
+			g.setColor(Color.red);
+			it = shapes.entrySet().iterator();
+			while (it.hasNext()) {
+				paintAllOracleObjects(g, it);
+			}
 		}
 
 		// paint intersecting polygons green
-		shapes = getIntersectionBetweenBoxAndCabin();
-		g.setColor(Color.green);
-		it = shapes.entrySet().iterator();
-		while (it.hasNext()) {
-			paintAllOracleObjects(g, it);
+		if (showIntersection) {
+			shapes = getIntersectionBetweenBoxAndCabin();
+			g.setColor(Color.green);
+			it = shapes.entrySet().iterator();
+			while (it.hasNext()) {
+				paintAllOracleObjects(g, it);
+			}
 		}
 
-		// paint MBR of Shape
-		shapes = getMBRForShape();
-		g.setColor(Color.blue);
-		it = shapes.entrySet().iterator();
-		while (it.hasNext()) {
-			paintAllOracleObjects(g, it);
+		if (showMBR) {
+			// paint MBR of Shape
+			shapes = getMBRForShape();
+			g.setColor(Color.blue);
+			it = shapes.entrySet().iterator();
+			while (it.hasNext()) {
+				paintAllOracleObjects(g, it);
+			}
 		}
-
 	}
 
 	private void paintAllOracleObjects(Graphics g,
@@ -584,7 +643,7 @@ public class MidnightRunJava extends JFrame {
 	public static void main(String[] args) throws ClassNotFoundException,
 			SQLException {
 
-		MidnightRunJava mrj = new MidnightRunJava();
+		mrj = new MidnightRunJava();
 		mrj.setVisible(true);
 	}
 
