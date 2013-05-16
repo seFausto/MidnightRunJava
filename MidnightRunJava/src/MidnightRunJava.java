@@ -22,7 +22,11 @@ public class MidnightRunJava extends JFrame {
 	public static Boolean showAllShapes = true;
 	public static Boolean showIntersection = false;
 	public static Boolean showNN = false;
-
+	public static Boolean showOverlaps = false;
+	public static Boolean showTouch = false;
+	public static Boolean showContainsA = false;
+	
+	
 	public static Boolean moveCar = false;
 
 	public static int pixelsToMove = 100;
@@ -93,12 +97,40 @@ public class MidnightRunJava extends JFrame {
 			}
 		});
 
+		JButton btnShowOverlaps = new JButton("ShowOverlaps");
+		btnShowOverlaps.addActionListener(new java.awt.event.ActionListener() {
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
+				showOverlaps = !showOverlaps;
+				mrj.repaint();
+			}
+		});
+
+		JButton btnShowTouch = new JButton("ShowTouch");
+		btnShowTouch.addActionListener(new java.awt.event.ActionListener() {
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
+				showTouch = !showTouch;
+				mrj.repaint();
+			}
+		});
+
+		
+		JButton btnShowContainsA = new JButton("ShowContainsA");
+		btnShowContainsA.addActionListener(new java.awt.event.ActionListener() {
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
+				showContainsA = !showContainsA;
+				mrj.repaint();
+			}
+		});
+		
 		panel.add(btnShowAllShapes);
 		panel.add(btnShowMBR);
 		panel.add(btnShowLenghtOfMountains);
 		panel.add(btnShowIntersection);
 		panel.add(btnShowNN);
 		panel.add(btnShowMoon);
+		panel.add(btnShowOverlaps);
+		panel.add(btnShowTouch);
+		panel.add(btnShowContainsA);
 	}
 
 	public void paint(Graphics g) {
@@ -111,9 +143,8 @@ public class MidnightRunJava extends JFrame {
 			showIntersection = false;
 			showNN = false;
 		}
-		
-		if (pixelsToMove == 0 )
-		{
+
+		if (pixelsToMove == 0) {
 			showAllShapes = true;
 			moveCar = false;
 		}
@@ -166,36 +197,69 @@ public class MidnightRunJava extends JFrame {
 			}
 		}
 
-		if (moveCar) {
+		if (showOverlaps) {
 
-			shapes = getShapesWithoutLetters();
-			HashMap<Object[], String> car = new HashMap<Object[], String>();
-
+			shapes = getOverlaps();
+			g.setColor(Color.MAGENTA);
 			it = shapes.entrySet().iterator();
 			while (it.hasNext()) {
-				Map.Entry<Object[], String> temp = (Map.Entry<Object[], String>) it
-						.next();
-				if (temp.getValue() == "Rectangle"
-						|| temp.getValue() == "Polygon"
-						|| temp.getValue() == "Circle") {
-					car.put(temp.getKey(), temp.getValue());
-				} else {
-
-					paintAllOracleObjects(g, temp);
-				}
+				paintAllOracleObjects(g, it);
 			}
+		}
 
-			Iterator<Entry<Object[], String>> carIterator;
+		if (showTouch) {
 
-			
-			for (pixelsToMove = 100; pixelsToMove > 0; pixelsToMove=pixelsToMove -speed  ) {
-				carIterator = car.entrySet().iterator();
-				g.clearRect(200, 400, 1000, 100);
-				while (carIterator.hasNext()) {
-					paintCarMovement(g, carIterator, pixelsToMove);
-				}
+			shapes = getTouch();
+			g.setColor(Color.YELLOW);
+			it = shapes.entrySet().iterator();
+			while (it.hasNext()) {
+				paintAllOracleObjects(g, it);
 			}
+		}
 		
+		if (showContainsA) {
+
+			shapes = getContainsA();
+			g.setColor(Color.WHITE);
+			it = shapes.entrySet().iterator();
+			while (it.hasNext()) {
+				paintAllOracleObjects(g, it);
+			}
+		}
+
+		if (moveCar) {
+			carMovement(g);
+		}
+	}
+
+	private void carMovement(Graphics g) {
+		HashMap<Object[], String> shapes;
+		Iterator<Entry<Object[], String>> it;
+		shapes = getShapesWithoutLetters();
+		HashMap<Object[], String> car = new HashMap<Object[], String>();
+
+		it = shapes.entrySet().iterator();
+		while (it.hasNext()) {
+			Map.Entry<Object[], String> temp = (Map.Entry<Object[], String>) it
+					.next();
+			if (temp.getValue() == "Rectangle" || temp.getValue() == "Polygon"
+					|| temp.getValue() == "Circle") {
+				car.put(temp.getKey(), temp.getValue());
+			} else {
+
+				paintAllOracleObjects(g, temp);
+			}
+		}
+
+		Iterator<Entry<Object[], String>> carIterator;
+
+		for (pixelsToMove = 100; pixelsToMove > 0; pixelsToMove = pixelsToMove
+				- speed) {
+			carIterator = car.entrySet().iterator();
+			g.clearRect(200, 400, 1000, 100);
+			while (carIterator.hasNext()) {
+				paintCarMovement(g, carIterator, pixelsToMove);
+			}
 		}
 	}
 
@@ -249,7 +313,7 @@ public class MidnightRunJava extends JFrame {
 
 		g.drawOval(convertOracleXToJavaX(leftmostX) + pixelsToMove2,
 				convertOracleYToJavaY(topmostY), width, width);
-		
+
 	}
 
 	private void drawOraclePolygonWithMove(Graphics g,
@@ -272,7 +336,7 @@ public class MidnightRunJava extends JFrame {
 		}
 
 		g.drawPolygon(x, y, x.length);
-		
+
 	}
 
 	private void drawOracleRectangleWithMove(Graphics g,
@@ -800,6 +864,137 @@ public class MidnightRunJava extends JFrame {
 
 		return result;
 
+	}
+
+	private static HashMap<Object[], String> getOverlaps() {
+		HashMap<Object[], String> result = new HashMap<Object[], String>();
+
+		Statement stmt = null;
+		Connection con = null;
+
+		String query = "SELECT m.name, m.Shape.sdo_elem_info as info, m.Shape.sdo_ordinates as ordinates FROM cola_markets m ";
+		query += " WHERE SDO_OVERLAPS(m.shape, ";
+		query += "	            SDO_GEOMETRY(2003, NULL, NULL, ";
+		query += "	              SDO_ELEM_INFO_ARRAY(1,1003,3), ";
+		query += "            SDO_ORDINATE_ARRAY(53,5, 78,12)) ";
+		query += "            ) = 'TRUE' ";
+		try {
+
+			DriverManager.registerDriver(new oracle.jdbc.driver.OracleDriver());
+
+			con = DriverManager
+					.getConnection("jdbc:oracle:thin:mvdemo/mvdemo@localhost:1521:orcl");
+
+			stmt = con.createStatement();
+
+			ResultSet rs = stmt.executeQuery(query);
+
+			while (rs.next()) {
+
+				Array infoArray = rs.getArray("info");
+				Object[] elemInfo = (Object[]) infoArray.getArray();
+
+				Array ordinateArray = rs.getArray("ordinates");
+				String name = rs.getString("name");
+
+				getOracleObjectType(result, elemInfo, ordinateArray, name);
+			}
+
+		} catch (SQLException e) {
+
+		}
+
+		return result;
+	}
+
+	private static HashMap<Object[], String> getContainsA() {
+		HashMap<Object[], String> result = new HashMap<Object[], String>();
+
+		Statement stmt = null;
+		Connection con = null;
+
+		String query = "SELECT m.name, m.Shape.sdo_elem_info as info, m.Shape.sdo_ordinates as ordinates FROM cola_markets m ";
+		query += "  WHERE SDO_CONTAINS(m.shape, ";
+		query += "            SDO_GEOMETRY(2003, NULL, NULL, ";
+		query += "            sdo_elem_info_array ( 1,2,1 ";
+		query += "                          ,5,2,1 ";
+		query += "                          ,9,2,1  ";
+		query += "                          ,13,2,1 ";
+		query += "                        ),  ";
+		query += "    sdo_ordinate_array (   62, 8, 63,10    ";
+		query += "                          ,63,10, 64, 8  ";
+		query += "                          ,64, 8, 64, 8.5   ";
+		query += "                          ,63, 9, 62.5, 9  ";
+		query += "                        )) ";
+		query += "            ) = 'TRUE' ";
+		
+		try {
+
+			DriverManager.registerDriver(new oracle.jdbc.driver.OracleDriver());
+
+			con = DriverManager
+					.getConnection("jdbc:oracle:thin:mvdemo/mvdemo@localhost:1521:orcl");
+
+			stmt = con.createStatement();
+
+			ResultSet rs = stmt.executeQuery(query);
+
+			while (rs.next()) {
+
+				Array infoArray = rs.getArray("info");
+				Object[] elemInfo = (Object[]) infoArray.getArray();
+
+				Array ordinateArray = rs.getArray("ordinates");
+				String name = rs.getString("name");
+
+				getOracleObjectType(result, elemInfo, ordinateArray, name);
+			}
+
+		} catch (SQLException e) {
+
+		}
+
+		return result;
+	}
+
+	private HashMap<Object[], String> getTouch() {
+		HashMap<Object[], String> result = new HashMap<Object[], String>();
+
+		Statement stmt = null;
+		Connection con = null;
+
+		String query = "SELECT m.name, m.Shape.sdo_elem_info as info, m.Shape.sdo_ordinates as ordinates FROM cola_markets m, cola_markets m2 ";
+		query += "   WHERE SDO_TOUCH(m.shape, ";
+		query += "            m2.shape ";
+		query += "             ) = 'TRUE' ";
+
+		try {
+
+			DriverManager.registerDriver(new oracle.jdbc.driver.OracleDriver());
+
+			con = DriverManager
+					.getConnection("jdbc:oracle:thin:mvdemo/mvdemo@localhost:1521:orcl");
+
+			stmt = con.createStatement();
+
+			ResultSet rs = stmt.executeQuery(query);
+
+			while (rs.next()) {
+
+				Array infoArray = rs.getArray("info");
+				Object[] elemInfo = (Object[]) infoArray.getArray();
+
+				Array ordinateArray = rs.getArray("ordinates");
+				String name = rs.getString("name");
+
+				getOracleObjectType(result, elemInfo, ordinateArray, name);
+			}
+
+		} catch (SQLException e) {
+
+		}
+
+		return result;
 	}
 
 	private static void getOracleObjectType(HashMap<Object[], String> result,
