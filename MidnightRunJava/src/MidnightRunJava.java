@@ -1,4 +1,8 @@
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.image.ImageObserver;
+import java.text.AttributedCharacterIterator;
 import java.util.List;
 import javax.swing.*;
 
@@ -19,9 +23,14 @@ public class MidnightRunJava extends JFrame {
 	public static Boolean showIntersection = false;
 	public static Boolean showNN = false;
 
+	public static Boolean moveCar = false;
+
+	public static int pixelsToMove = 100;
 	static MidnightRunJava mrj;
 
 	static String queryAllShapes = "SELECT m.name, m.Shape.sdo_elem_info as info, m.Shape.sdo_ordinates as ordinates from MVDEMO.cola_markets m";
+	static String queryAllShapesWithoutLetters = "select  m.name, m.Shape.sdo_elem_info as info, m.Shape.sdo_ordinates as ordinates  from mvdemo.cola_markets m where name not in ('Letter A', 'Letter E', 'Letter C')";
+	private int speed = 5;
 
 	public MidnightRunJava() {
 		final JPanel panel = new JPanel();
@@ -84,17 +93,30 @@ public class MidnightRunJava extends JFrame {
 			}
 		});
 
+		panel.add(btnShowAllShapes);
 		panel.add(btnShowMBR);
 		panel.add(btnShowLenghtOfMountains);
-		panel.add(btnShowAllShapes);
 		panel.add(btnShowIntersection);
 		panel.add(btnShowNN);
 		panel.add(btnShowMoon);
-
 	}
 
 	public void paint(Graphics g) {
 		super.paint(g);
+
+		if (moveCar) {
+			showMBR = false;
+			showLenghtOfMountains = false;
+			showAllShapes = false;
+			showIntersection = false;
+			showNN = false;
+		}
+		
+		if (pixelsToMove == 0 )
+		{
+			showAllShapes = true;
+			moveCar = false;
+		}
 
 		if (showLenghtOfMountains) {
 			g.drawString("Lenght of Mountains: "
@@ -143,6 +165,181 @@ public class MidnightRunJava extends JFrame {
 				paintAllOracleObjects(g, it);
 			}
 		}
+
+		if (moveCar) {
+
+			shapes = getShapesWithoutLetters();
+			HashMap<Object[], String> car = new HashMap<Object[], String>();
+
+			it = shapes.entrySet().iterator();
+			while (it.hasNext()) {
+				Map.Entry<Object[], String> temp = (Map.Entry<Object[], String>) it
+						.next();
+				if (temp.getValue() == "Rectangle"
+						|| temp.getValue() == "Polygon"
+						|| temp.getValue() == "Circle") {
+					car.put(temp.getKey(), temp.getValue());
+				} else {
+
+					paintAllOracleObjects(g, temp);
+				}
+			}
+
+			Iterator<Entry<Object[], String>> carIterator;
+
+			
+			for (pixelsToMove = 100; pixelsToMove > 0; pixelsToMove=pixelsToMove -speed  ) {
+				carIterator = car.entrySet().iterator();
+				g.clearRect(200, 400, 1000, 100);
+				while (carIterator.hasNext()) {
+					paintCarMovement(g, carIterator, pixelsToMove);
+				}
+			}
+		
+		}
+	}
+
+	private void paintCarMovement(Graphics g,
+			Iterator<Entry<Object[], String>> it, int pixelsToMove) {
+		Map.Entry<Object[], String> pairs = (Map.Entry<Object[], String>) it
+				.next();
+
+		if (pairs.getValue().equals("Rectangle")) {
+			drawOracleRectangleWithMove(g, pairs, pixelsToMove);
+		} else if (pairs.getValue().equals("Polygon")) {
+			drawOraclePolygonWithMove(g, pairs, pixelsToMove);
+		} else if (pairs.getValue().equals("Circle")) {
+			drawOracleCircleWithMove(g, pairs, pixelsToMove);
+		}
+
+	}
+
+	private void drawOracleCircleWithMove(Graphics g,
+			Entry<Object[], String> pairs, int pixelsToMove2) {
+		// Get points
+		List<BigDecimal> xPoints = new ArrayList<BigDecimal>();
+		List<BigDecimal> yPoints = new ArrayList<BigDecimal>();
+
+		for (int i = 0; i < pairs.getKey().length; i++) {
+			xPoints.add((BigDecimal) pairs.getKey()[i]);
+			yPoints.add((BigDecimal) pairs.getKey()[++i]);
+		}
+
+		// get points in oracle
+		BigDecimal leftmostX = BigDecimal.valueOf(1000);
+		BigDecimal topmostY = BigDecimal.ZERO;
+		BigDecimal bottomY = BigDecimal.valueOf(1000);
+
+		for (int i = 0; i < xPoints.size(); i++) {
+			if (xPoints.get(i).intValue() < leftmostX.intValue()) {
+				leftmostX = xPoints.get(i);
+			}
+
+			if (xPoints.get(i).intValue() > topmostY.intValue()) {
+				topmostY = yPoints.get(i);
+			}
+
+			if (xPoints.get(i).intValue() < bottomY.intValue()) {
+				bottomY = yPoints.get(i);
+			}
+
+		}
+
+		int width = (topmostY.intValue() - bottomY.intValue()) * multiplier;
+
+		g.drawOval(convertOracleXToJavaX(leftmostX) + pixelsToMove2,
+				convertOracleYToJavaY(topmostY), width, width);
+		
+	}
+
+	private void drawOraclePolygonWithMove(Graphics g,
+			Entry<Object[], String> pairs, int pixelsToMove2) {
+		List<Integer> xPoints = new ArrayList<Integer>();
+		List<Integer> yPoints = new ArrayList<Integer>();
+
+		for (int i = 0; i < pairs.getKey().length; i++) {
+			xPoints.add(convertOracleXToJavaX((BigDecimal) pairs.getKey()[i]));
+			yPoints.add(convertOracleYToJavaY((BigDecimal) pairs.getKey()[++i]));
+
+		}
+
+		int[] x = new int[xPoints.size()];
+		int[] y = new int[yPoints.size()];
+
+		for (int i = 0; i < xPoints.size(); i++) {
+			x[i] = xPoints.get(i) + pixelsToMove2;
+			y[i] = yPoints.get(i);
+		}
+
+		g.drawPolygon(x, y, x.length);
+		
+	}
+
+	private void drawOracleRectangleWithMove(Graphics g,
+			Entry<Object[], String> pairs, int pixelsToMove) {
+		List<BigDecimal> xPoints = new ArrayList<BigDecimal>();
+		List<BigDecimal> yPoints = new ArrayList<BigDecimal>();
+
+		for (int i = 0; i < pairs.getKey().length; i++) {
+			xPoints.add((BigDecimal) pairs.getKey()[i]);
+			yPoints.add((BigDecimal) pairs.getKey()[++i]);
+
+		}
+
+		// for a rectangle it goes from starting point to width and
+		// height so do the math
+		int x = convertOracleXToJavaX(xPoints.get(0));
+		int y = convertOracleYToJavaY(yPoints.get(1));
+
+		int width = convertOracleXToJavaX(xPoints.get(1)) - x;
+		int height = (yPoints.get(1).intValue() - yPoints.get(0).intValue())
+				* multiplier;
+		g.clearRect(x + pixelsToMove + 1, y, width, height);
+		g.drawRect(x + pixelsToMove, y, width, height);
+
+		try {
+			Thread.sleep(50);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+	}
+
+	private HashMap<Object[], String> getShapesWithoutLetters() {
+		HashMap<Object[], String> result = new HashMap<Object[], String>();
+
+		Statement stmt = null;
+		Connection con = null;
+
+		try {
+
+			DriverManager.registerDriver(new oracle.jdbc.driver.OracleDriver());
+
+			con = DriverManager
+					.getConnection("jdbc:oracle:thin:mvdemo/mvdemo@localhost:1521:orcl");
+
+			stmt = con.createStatement();
+
+			ResultSet rs = stmt.executeQuery(queryAllShapesWithoutLetters);
+
+			while (rs.next()) {
+
+				Array infoArray = rs.getArray("info");
+				Object[] elemInfo = (Object[]) infoArray.getArray();
+
+				Array ordinateArray = rs.getArray("ordinates");
+				String name = rs.getString("name");
+
+				getOracleObjectType(result, elemInfo, ordinateArray, name);
+			}
+
+		} catch (SQLException e) {
+			System.out.print(e.getMessage());
+		}
+
+		return result;
+
 	}
 
 	private void paintAllOracleObjects(Graphics g,
@@ -150,6 +347,24 @@ public class MidnightRunJava extends JFrame {
 		Map.Entry<Object[], String> pairs = (Map.Entry<Object[], String>) it
 				.next();
 
+		if (pairs.getValue().equals("Line")) {
+			drawOracleMultiline(g, pairs);
+		} else if (pairs.getValue().equals("Rectangle")) {
+			drawOracleRectangle(g, pairs);
+		} else if (pairs.getValue().equals("Polygon")) {
+			drawOraclePolygon(g, pairs);
+		} else if (pairs.getValue().equals("Bird")) {
+			drawOracleBrids(g, pairs);
+		} else if (pairs.getValue().equals("Moon")) {
+			drawOracleMoon(g, pairs);
+		} else if (pairs.getValue().equals("Circle")) {
+			drawOracleCircle(g, pairs);
+		} else if (pairs.getValue().equals("LetterC")) {
+			drawOraclePolygon(g, pairs);
+		}
+	}
+
+	private void paintAllOracleObjects(Graphics g, Entry<Object[], String> pairs) {
 		if (pairs.getValue().equals("Line")) {
 			drawOracleMultiline(g, pairs);
 		} else if (pairs.getValue().equals("Rectangle")) {
@@ -338,8 +553,6 @@ public class MidnightRunJava extends JFrame {
 	}
 
 	private void drawOraclePolygon(Graphics g, Map.Entry<Object[], String> pairs) {
-		// TODO: Fix how polygon displays
-
 		List<Integer> xPoints = new ArrayList<Integer>();
 		List<Integer> yPoints = new ArrayList<Integer>();
 
@@ -425,7 +638,7 @@ public class MidnightRunJava extends JFrame {
 			}
 
 		} catch (SQLException e) {
-
+			System.out.print(e.getMessage());
 		}
 
 		return result;
